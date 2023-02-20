@@ -19,6 +19,10 @@ struct SDwindleNodeData {
 
     bool                             splitTop = false; // for preserve_split
 
+    bool                             groupHead            = false;
+    SDwindleNodeData*                pNextGroupMember     = nullptr;
+    SDwindleNodeData*                pPreviousGroupMember = nullptr;
+
     Vector2D                         position;
     Vector2D                         size;
 
@@ -36,6 +40,11 @@ struct SDwindleNodeData {
 
     void                recalcSizePosRecursive(bool force = false);
     void                getAllChildrenRecursive(std::deque<SDwindleNodeData*>*);
+    bool                isGroupMember();
+    SDwindleNodeData*   getGroupHead();
+    SDwindleNodeData*   getGroupVisible();
+    int                 getGroupMemberCount();
+    void                setGroupFocusedNode(SDwindleNodeData*);
     CHyprDwindleLayout* layout = nullptr;
 };
 
@@ -53,7 +62,6 @@ class CHyprDwindleLayout : public IHyprLayout {
     virtual void                     switchWindows(CWindow*, CWindow*);
     virtual void                     alterSplitRatio(CWindow*, float, bool);
     virtual std::string              getLayoutName();
-    virtual void                     replaceWindowDataWith(CWindow* from, CWindow* to);
 
     virtual void                     onEnable();
     virtual void                     onDisable();
@@ -67,7 +75,10 @@ class CHyprDwindleLayout : public IHyprLayout {
     SDwindleNodeData*           getFirstNodeOnWorkspace(const int&);
     SDwindleNodeData*           getMasterNodeOnWorkspace(const int&);
 
+    void                        toggleWindowGroup(CWindow*);
+    void                        switchGroupWindow(CWindow*, bool forward, CWindow* to = nullptr);
     void                        toggleSplit(CWindow*);
+    std::deque<CWindow*>        getGroupMembers(CWindow*);
 
     friend struct SDwindleNodeData;
 };

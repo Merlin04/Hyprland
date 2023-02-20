@@ -33,29 +33,24 @@ void CHyprGroupBarDecoration::updateWindow(CWindow* pWindow) {
         m_vLastWindowSize = pWindow->m_vRealSize.vec();
     }
 
-    if (!m_pWindow->m_sGroupData.pNextWindow) {
+    // let's check if the window group is different.
+
+    if (g_pLayoutManager->getCurrentLayout()->getLayoutName() != "dwindle") {
+        // ????
         m_pWindow->m_vDecosToRemove.push_back(this);
         return;
     }
 
-    m_dwGroupMembers.clear();
-    CWindow* curr = pWindow;
-    CWindow* head = nullptr;
-    while (!curr->m_sGroupData.head) {
-        curr = curr->m_sGroupData.pNextWindow;
-    }
+    // get the group info
+    SLayoutMessageHeader header;
+    header.pWindow = m_pWindow;
 
-    head = curr;
-    m_dwGroupMembers.push_back(curr);
-    curr = curr->m_sGroupData.pNextWindow;
-    while (curr != head) {
-        m_dwGroupMembers.push_back(curr);
-        curr = curr->m_sGroupData.pNextWindow;
-    }
+    m_dwGroupMembers = std::any_cast<std::deque<CWindow*>>(g_pLayoutManager->getCurrentLayout()->layoutMessage(header, "groupinfo"));
 
     damageEntire();
 
     if (m_dwGroupMembers.size() == 0) {
+        // remove
         m_pWindow->m_vDecosToRemove.push_back(this);
         return;
     }
@@ -91,8 +86,8 @@ void CHyprGroupBarDecoration::draw(CMonitor* pMonitor, float a, const Vector2D& 
 
         scaleBox(&rect, pMonitor->scale);
 
-        static auto* const PGROUPCOLACTIVE   = &g_pConfigManager->getConfigValuePtr("general:col.group_border_active")->data;
-        static auto* const PGROUPCOLINACTIVE = &g_pConfigManager->getConfigValuePtr("general:col.group_border")->data;
+        static auto* const PGROUPCOLACTIVE   = &g_pConfigManager->getConfigValuePtr("dwindle:col.group_border_active")->data;
+        static auto* const PGROUPCOLINACTIVE = &g_pConfigManager->getConfigValuePtr("dwindle:col.group_border")->data;
 
         CColor             color = m_dwGroupMembers[i] == g_pCompositor->m_pLastWindow ? ((CGradientValueData*)PGROUPCOLACTIVE->get())->m_vColors[0] :
                                                                                          ((CGradientValueData*)PGROUPCOLINACTIVE->get())->m_vColors[0];
