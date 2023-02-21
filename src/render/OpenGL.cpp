@@ -1034,6 +1034,80 @@ void CHyprOpenGLImpl::renderBorder(wlr_box* box, const CGradientValueData& grad,
     box->height -= 2 * scaledBorderSize;
 }
 
+void CHyprOpenGLImpl::renderText(const std::string& str, double size, wlr_box* box, const CColor& col) {
+    // render text in a given box
+    // based on the rendering in HyprError.cpp (using cairo)
+
+    // here's my implementation
+
+    // 1. create a cairo surface
+    // 2. create a cairo context
+    // 3. set the font
+    // 4. set the color
+    // 5. set the font size
+    // 6. set the text alignment
+    // 7. draw the text
+    // 8. get the text extents
+    // 9. create a texture
+    // 10. copy the cairo surface to the texture
+    // 11. render the texture
+
+    const auto PMONITOR = m_RenderData.pMonitor;
+    const auto CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, box->width, box->height);
+    const auto CAIRO = cairo_create(CAIROSURFACE);
+
+    cairo_save(CAIRO);
+    cairo_set_operator(CAIRO, CAIRO_OPERATOR_CLEAR);
+    cairo_paint(CAIRO);
+    cairo_restore(CAIRO);
+
+    cairo_set_source_rgba(CAIRO, col.r, col.g, col.b, col.a);
+    cairo_select_font_face(CAIRO, "sans-serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL); // TODO: make this configurable
+    cairo_set_font_size(CAIRO, size);
+
+    cairo_text_extents_t extents;
+    cairo_text_extents(CAIRO, str.c_str(), &extents);
+
+    cairo_move_to(CAIRO, box->width / 2 - extents.width / 2 - extents.x_bearing, box->height / 2 - extents.height / 2 - extents.y_bearing);
+    cairo_show_text(CAIRO, str.c_str());
+
+    cairo_surface_flush(CAIROSURFACE);
+
+    const auto DATA = cairo_image_surface_get_data(CAIROSURFACE);
+    auto texture = CTexture();
+    texture.allocate();
+    glBindTexture(GL_TEXTURE_2D, texture.m_iTexID);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+#ifndef GLES2
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+#endif
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, box->width, box->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
+
+    cairo_destroy(CAIRO);
+    cairo_surface_destroy(CAIROSURFACE);
+
+    renderTexture(texture, box, 1, 0, false, true);
+
+
+
+    //    const auto TEXTURE = wlr_texture_from_pixels(PMONITOR->renderer, WL_SHM_FORMAT_ARGB8888, cairo_image_surface_get_stride(CAIROSURFACE), box->width, box->height, cairo_image_surface_get_data(CAIROSURFACE));
+//
+//    wlr_render_texture_with_matrix(PMONITOR->renderer, TEXTURE, PMONITOR->output->transform_matrix, box->x, box->y, 1.0f);
+//
+//    wlr_texture_destroy(TEXTURE);
+//
+//    cairo_destroy(CAIRO);
+//
+//    cairo_surface_destroy(CAIROSURFACE);
+
+
+
+}
+
 void CHyprOpenGLImpl::makeRawWindowSnapshot(CWindow* pWindow, CFramebuffer* pFramebuffer) {
     // we trust the window is valid.
     const auto PMONITOR = g_pCompositor->getMonitorFromID(pWindow->m_iMonitorID);
